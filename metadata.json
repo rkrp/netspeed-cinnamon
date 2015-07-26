@@ -1,0 +1,7 @@
+{
+    "uuid": "netspeed@rkrp",
+    "name": "Net Speed",
+    "description": "Show network transfer speed of any adapter",
+    "icon": "force-exit",
+    "max-instances": "-1"
+}
