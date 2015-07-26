@@ -48,7 +48,7 @@ MyApplet.prototype = {
             var new_rx = parseInt(speed[1]);
 
             //toFixed() returns a string. Otherwise, must use toString()
-            this.title = ((new_rx - this.old_rx)/1024).toFixed(2) + " KB/s";
+            this.title = "▼ " + ((new_rx - this.old_rx)/1024).toFixed(2) + " KB/s";
 
             //Save the current value in old_rx
             this.old_rx = new_rx;
