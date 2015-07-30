@@ -1,5 +1,6 @@
 const Applet = imports.ui.applet;
 const Util = imports.misc.util;
+const FileUtils = imports.misc.fileUtils;
 const Lang = imports.lang;
 const Mainloop = imports.mainloop;
 const GLib = imports.gi.GLib;
@@ -16,6 +17,8 @@ MyApplet.prototype = {
     old_rx : 0,
     old_tx : 0,
 
+    iflist  : [],
+
     //Download data provider
     rx_path_template: "/sys/class/net/%s/statistics/rx_bytes",
     rx_path: "",
@@ -28,11 +31,13 @@ MyApplet.prototype = {
         Applet.TextIconApplet.prototype._init.call(this, orientation, panel_height, instance_id);
 
         //this.set_applet_icon_name("force-exit");
-        this.set_applet_tooltip(_("Change Network ifaces"));
+        this.set_applet_tooltip(_("Click to change network interfaces"));
         this.set_applet_label("NetSpeeds");
         
         //TODO
         //Option to select network iface
+        this.iflist = this._get_interfaces_list();
+        
         var iface = "wlp1s0";
         this.rx_path = this.rx_path_template.replace("%s", iface);
         this.tx_path = this.tx_path_template.replace("%s", iface);
@@ -82,9 +87,25 @@ MyApplet.prototype = {
         GLib.free(bytes_sent);
         return current_speed;
     },
+
+    _get_interfaces_list: function() {
+        var dev_data = GLib.file_get_contents('/proc/net/dev');
+        var iflist = [];
+        if(dev_data[0]) {
+            var lines = String(dev_data[1]).split("\n");
+            //Omit the first two lines
+            for(let i = 2 ; i < lines.length ; i++) {
+                var separator_pos = lines[i].indexOf(":");
+                var iface = lines[i].substring(0, separator_pos);
+                iflist[i - 2] = iface.trim();
+            }
+        }
+
+        return iflist;
+    },
     
     on_applet_clicked: function() {
-        
+                
     }
 };
 
