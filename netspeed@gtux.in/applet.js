@@ -1,9 +1,15 @@
 const Applet = imports.ui.applet;
+const PopupMenu = imports.ui.popupMenu;
+const Settings = imports.ui.settings;
+
 const Util = imports.misc.util;
 const FileUtils = imports.misc.fileUtils;
+
 const Lang = imports.lang;
 const Mainloop = imports.mainloop;
+
 const GLib = imports.gi.GLib;
+const St = imports.gi.St;
 
 function MyApplet(orientation, panel_height, instance_id) {
     this._init(orientation, panel_height, instance_id);
@@ -18,6 +24,7 @@ MyApplet.prototype = {
     old_tx : 0,
 
     iflist  : [],
+    selected_iface : "lo",
 
     //Download data provider
     rx_path_template: "/sys/class/net/%s/statistics/rx_bytes",
@@ -30,19 +37,35 @@ MyApplet.prototype = {
     _init: function(orientation, panel_height, instance_id) {
         Applet.TextIconApplet.prototype._init.call(this, orientation, panel_height, instance_id);
 
-        //this.set_applet_icon_name("force-exit");
         this.set_applet_tooltip(_("Click to change network interfaces"));
         this.set_applet_label("NetSpeeds");
+
+        this.settings = new Settings.AppletSettings(this, "netspeed@gtux.in", this.instance_id);
+        this.settings.bindProperty(Settings.BindingDirection.IN, "iface-in-use", "selected_iface", this._on_settings_changed, null);
         
         //TODO
         //Option to select network iface
         this.iflist = this._get_interfaces_list();
+        this.set_applet_label(String(this.iflist.length));
+
+        //Creating a popup menu
+        //this.menuManager = new PopupMenu.PopupMenuManager(this);
+        //this.menu = new Applet.AppletPopupMenu(this, orientation);
+        //this.menuManager.addMenu(this.menu);
         
-        var iface = "wlp1s0";
-        this.rx_path = this.rx_path_template.replace("%s", iface);
-        this.tx_path = this.tx_path_template.replace("%s", iface);
-    
+        //this._populate_menu(this.menu);
+
+        this._update_paths();
+
         this._update_speed();
+    },
+
+    _update_paths: function() {
+        //Downloads provider
+        this.rx_path = this.rx_path_template.replace("%s", this.selected_iface);
+
+        //Uploads provider
+        this.tx_path = this.tx_path_template.replace("%s", this.selected_iface);
     },
 
     _update_speed: function() {
@@ -94,18 +117,40 @@ MyApplet.prototype = {
         if(dev_data[0]) {
             var lines = String(dev_data[1]).split("\n");
             //Omit the first two lines
-            for(let i = 2 ; i < lines.length ; i++) {
+            for(let i = 2 ; i < lines.length ; i++) {                
                 var separator_pos = lines[i].indexOf(":");
-                var iface = lines[i].substring(0, separator_pos);
-                iflist[i - 2] = iface.trim();
+                var iface = lines[i].substring(0, separator_pos).trim();
+                if(iface.length != 0)
+                    iflist[i - 2] = iface;
             }
         }
 
         return iflist;
     },
+
+    _populate_menu: function(menu) {
+		//~ this.menu.addAction("Welpie", Lang.bind(this, function() {
+			//~ this.set_applet_tooltip(_("Working~~"));
+			//~ }));
+        //~ return;
+        this.menu.addSettingsAction(_("Network Settings"), 'network');
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        for(var i = 0 ; i < this.iflist.length ; i++) {
+			global.logError(this.iflist[i]);
+            this.menu.addAction(this.iflist[i], Lang.bind(this, function() {
+                this.selected_iface = this.iflist[i];
+                this.set_applet_tooltip(this.iflist[i]);
+                this._update_paths();
+            }));
+        }
+    },
+
+    _on_settings_changed: function() {
+		this._update_paths();
+	},
     
     on_applet_clicked: function() {
-                
+        this.menu.toggle();
     }
 };
 
