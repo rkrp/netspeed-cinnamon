@@ -23,6 +23,8 @@ MyApplet.prototype = {
     old_rx : 0,
     old_tx : 0,
 
+    stop_loop : false,
+
     iflist  : [],
     selected_iface : "lo",
 
@@ -35,29 +37,22 @@ MyApplet.prototype = {
     tx_path: "",
 
     _init: function(orientation, panel_height, instance_id) {
-        Applet.TextIconApplet.prototype._init.call(this, orientation, panel_height, instance_id);
+		try {
+			Applet.TextIconApplet.prototype._init.call(this, orientation, panel_height, instance_id);
 
-        this.set_applet_tooltip(_("Click to change network interfaces"));
-        this.set_applet_label("NetSpeeds");
+			this.set_applet_tooltip(_("Right click to change network interfaces"));
 
-        this.settings = new Settings.AppletSettings(this, "netspeed@gtux.in", this.instance_id);
-        this.settings.bindProperty(Settings.BindingDirection.IN, "iface-in-use", "selected_iface", this._on_settings_changed, null);
-        
-        //TODO
-        //Option to select network iface
-        this.iflist = this._get_interfaces_list();
-        this.set_applet_label(String(this.iflist.length));
+			this.settings = new Settings.AppletSettings(this, "netspeed@gtux.in", this.instance_id);
+			this.settings.bindProperty(Settings.BindingDirection.IN, "iface-in-use", "selected_iface", this._on_settings_changed, null);
+			
+			//Option to select network iface
+			this.iflist = this._get_interfaces_list();
 
-        //Creating a popup menu
-        //this.menuManager = new PopupMenu.PopupMenuManager(this);
-        //this.menu = new Applet.AppletPopupMenu(this, orientation);
-        //this.menuManager.addMenu(this.menu);
-        
-        //this._populate_menu(this.menu);
+			this._on_settings_changed();
 
-        this._update_paths();
-
-        this._update_speed();
+		} catch(e) {
+			global.logError(e);
+		} 
     },
 
     _update_paths: function() {
@@ -69,12 +64,15 @@ MyApplet.prototype = {
     },
 
     _update_speed: function() {
-        let down_speed = this._get_down_speed();
-        let up_speed = this._get_up_speed();
-        this.set_applet_label(down_speed + " KB/s ▼ " + up_speed + " KB/s ▲");
+		let down_speed = this._get_down_speed();
+		let up_speed = this._get_up_speed();
+		this.set_applet_label(down_speed + " KB/s ▼ " + up_speed + " KB/s ▲");
 
-        //Use MainLoop to run this function every 1000 ms
-        Mainloop.timeout_add(1000, Lang.bind(this, this._update_speed));
+		if(!this.stop_loop)
+			//Use MainLoop to run this function every 1000 ms
+			Mainloop.timeout_add(1000, Lang.bind(this, this._update_speed));
+		else
+			this.set_applet_label(this.stop_label);
     },
 
     _get_down_speed: function(iface) {
@@ -128,25 +126,17 @@ MyApplet.prototype = {
         return iflist;
     },
 
-    _populate_menu: function(menu) {
-		//~ this.menu.addAction("Welpie", Lang.bind(this, function() {
-			//~ this.set_applet_tooltip(_("Working~~"));
-			//~ }));
-        //~ return;
-        this.menu.addSettingsAction(_("Network Settings"), 'network');
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        for(var i = 0 ; i < this.iflist.length ; i++) {
-			global.logError(this.iflist[i]);
-            this.menu.addAction(this.iflist[i], Lang.bind(this, function() {
-                this.selected_iface = this.iflist[i];
-                this.set_applet_tooltip(this.iflist[i]);
-                this._update_paths();
-            }));
-        }
-    },
-
     _on_settings_changed: function() {
+		let index = this.iflist.indexOf(this.selected_iface);
+		if(index < 0) {
+			this.stop_label = "Invalid Interface";
+			this.stop_loop = true;
+			return;
+		} else {
+			this.stop_loop = false;
+		}
 		this._update_paths();
+		this._update_speed();
 	},
     
     on_applet_clicked: function() {
