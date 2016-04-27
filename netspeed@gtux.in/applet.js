@@ -36,6 +36,9 @@ MyApplet.prototype = {
     tx_path_template: "/sys/class/net/%s/statistics/tx_bytes",
     tx_path: "",
 
+    //Routes data provider
+    routes_file: "/proc/net/route",
+
     _init: function(orientation, panel_height, instance_id) {
 		try {
 			Applet.TextIconApplet.prototype._init.call(this, orientation, panel_height, instance_id);
@@ -43,16 +46,28 @@ MyApplet.prototype = {
 			this.set_applet_tooltip(_("Right click to change network interfaces"));
 
 			this.settings = new Settings.AppletSettings(this, "netspeed@gtux.in", this.instance_id);
-			this.settings.bindProperty(Settings.BindingDirection.IN, "iface-in-use", "selected_iface", this._on_settings_changed, null);
+			this.settings.bindProperty(Settings.BindingDirection.BIDIRECTIONAL, "iface-in-use", "selected_iface", this._on_settings_changed, null);
 			
 			//Option to select network iface
 			this.iflist = this._get_interfaces_list();
+
+			//Automatic interface selection
+			this._auto_iface();
 
 			this._on_settings_changed();
 
 		} catch(e) {
 			global.logError(e);
 		} 
+    },
+
+    _auto_iface: function() {
+        var file_data = GLib.file_get_contents(this.routes_file);
+        if(file_data[0]) {
+            this.selected_iface = String(file_data[1]).split("\n")[1].split('\t')[0]
+        }
+
+        Mainloop.timeout_add(5 * 60 * 1000, Lang.bind(this, this._auto_iface));
     },
 
     _update_paths: function() {

@@ -4,5 +4,5 @@
     "default" : "lo",
     "description": "Interface Name: ",
     "tooltip": "Use this to set which network interface to monitor"
- } 
+ }
 }

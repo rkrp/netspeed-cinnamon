@@ -17,9 +17,9 @@ Or you can wait until the applet is submitted to Cinnamon Spices so that you
 will be able to install it via Cinnamon Control Center GUI.
 
 ##To Do:
+- [x] Automatic interface switching
 - [x] Uploads Monitor
 - [ ] Menu to change network interfaces
-- [ ] Fallback for BSD systems
 - [x] Store/Retrieve Preferences
 - [x] Settings Dialog to change preferences
 - [ ] Submit applet to Cinnamon Spices
